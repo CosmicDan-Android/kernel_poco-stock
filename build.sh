@@ -76,14 +76,17 @@ if [ "${DO_KERNEL}" == "TRUE" ]; then
 	echo "---------------------------------------"
 	echo "[#] Starting kernel image build ..."
 	echo "---------------------------------------"
-	# TODO: delete old zImage
+	rm $(pwd)/out/arch/arm64/boot/Image.gz-dtb
 	export ARCH=arm64
 	export CROSS_COMPILE=$(pwd)/toolchains/aarch64-linux-android-4.9/bin/aarch64-linux-android-
 	make O=out beryllium_cosmicdan_defconfig
 	make O=out -j4
 	echo ""
-	# TODO: ensure new zImage.gz-dtb exists
-	echo "[i] Kernel image done."
+	if [ -f "$(pwd)/out/arch/arm64/boot/Image.gz-dtb" ]; then
+		echo "[i] Kernel image done."
+	else
+		echo "[!] Kernel image failed."
+	fi
 	echo ""
 fi
 
@@ -93,7 +96,26 @@ if [ "${DO_BOOTIMG}" == "TRUE" ]; then
 	echo "[#] Starting boot.img build ..."
 	echo "---------------------------------------"
 	echo ""
-	echo "TODO"
+	# cleanup old files, if any
+	rm -f "$(pwd)/ramdisk/ramdisk-new.cpio.gz"
+	rm -f "$(pwd)/ramdisk/unsigned-new.img"
+	rm -f "$(pwd)/ramdisk/image-new.img"
+	rm -f "$(pwd)/ramdisk/boot.img"
+	if [ ! -f "$(pwd)/out/arch/arm64/boot/Image.gz-dtb" ]; then
+		echo "[!] No kernel image has been built yet!"
+		exit -1
+	fi
+	cp -r "$(pwd)/out/arch/arm64/boot/Image.gz-dtb" "$(pwd)/ramdisk/split_img/boot.img-zImage"
+	"$(pwd)/ramdisk/repackimg.sh" > "$(pwd)/ramdisk/repackimg.log"
+	# cleanup intermediates
+	rm -f "$(pwd)/ramdisk/unsigned-new.img"
+	rm -f "$(pwd)/ramdisk/ramdisk-new.cpio.gz"
+	if [ -f "$(pwd)/ramdisk/image-new.img" ]; then
+		mv "$(pwd)/ramdisk/image-new.img" "$(pwd)/ramdisk/boot.img"
+		echo "[i] Boot.img image done."
+	else
+		echo "[!] Boot.img image failed."
+	fi
 	echo ""
 fi
 

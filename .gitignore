@@ -120,3 +120,5 @@ techpack/audio/
 
 # fetched Android config fragments
 kernel/configs/android-*.cfg
+
+/out
